@@ -42,11 +42,20 @@ async function run() {
 
         // job applicationapi
 
-        app.post('job_applications',async(req, res)=>{
+        app.get('/jobApplications', async(req, res)=>{
+            const userEmail = req.query.email;
+            const query = {applicant_email : userEmail}
+            const result = await jobApplyCOllection.find(query).toArray();
+            res.send(result)
+        })
+        
+        app.post('/jobApplications', async (req, res) => {
             const application = req.body;
             const result = await jobApplyCOllection.insertOne(application);
             res.send(result);
         })
+
+
 
 
     } finally {
