@@ -42,16 +42,33 @@ async function run() {
 
         // job applicationapi
 
-        app.get('/jobApplications', async(req, res)=>{
+        app.get('/jobApplications', async (req, res) => {
             const userEmail = req.query.email;
-            const query = {applicant_email : userEmail}
+            const query = { applicant_email: userEmail }
             const result = await jobApplyCOllection.find(query).toArray();
+            for (const a of result) {
+                // console.log(a.job._id);
+                const query1 = { _id: new ObjectId(a.job_id) }
+                const job = await jobCollection.findOne(query1);
+                if (job) {
+                    a.title = job.title;
+                    a.company = job.company;
+                    a.company_logo = job.company_logo;
+                }
+            }
             res.send(result)
         })
-        
+
         app.post('/jobApplications', async (req, res) => {
             const application = req.body;
             const result = await jobApplyCOllection.insertOne(application);
+            res.send(result);
+        })
+
+        app.Delete('/jobApplications/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await jobCollection.deleteOne(query);
             res.send(result);
         })
 
