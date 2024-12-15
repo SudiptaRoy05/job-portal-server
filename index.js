@@ -39,6 +39,11 @@ async function run() {
             const result = await jobCollection.findOne(query);
             res.send(result);
         })
+        app.post('/jobs', async (req, res) => {
+            const job = req.body;
+            const result = await jobCollection.insertOne(job);
+            res.send(result);
+        })
 
         // job applicationapi
 
@@ -65,10 +70,10 @@ async function run() {
             res.send(result);
         })
 
-        app.Delete('/jobApplications/:id', async (req, res) => {
+        app.delete('/jobApplications/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
-            const result = await jobCollection.deleteOne(query);
+            const result = await jobApplyCOllection.deleteOne(query);
             res.send(result);
         })
 
