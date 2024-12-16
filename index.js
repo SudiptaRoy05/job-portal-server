@@ -28,7 +28,12 @@ async function run() {
         const jobApplyCOllection = database.collection('jobApplyCOllection')
 
         app.get('/jobs', async (req, res) => {
-            const cursor = jobCollection.find();
+            const email = req.query.email;
+            let query = {};
+            if (email) {
+                query = { hr_email: email }
+            }
+            const cursor = jobCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
         });
@@ -45,7 +50,17 @@ async function run() {
             res.send(result);
         })
 
+
         // job applicationapi
+
+        app.get('/jobApplications/jobs/:job_id', async (req, res) => {
+            const jobId = req.params.job_id;
+            console.log(jobId)
+            const query = { job_id: jobId };
+            const result = await jobApplyCOllection.find(query).toArray();
+            console.log(result)
+            res.send(result);
+        })
 
         app.get('/jobApplications', async (req, res) => {
             const userEmail = req.query.email;
