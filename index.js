@@ -1,11 +1,38 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const app = express();
 const port = process.env.PORT || 5000;
 require('dotenv').config()
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+
+const logger = (req, res, next) => {
+    console.log('inside the logger');
+    next();
+}
+
+const verifyToken = (req, res, next) => {
+    // console.log('Token verified');
+    // const token = req?.cookies?.token;
+    // if (!token) {
+    //     return res.status(401).send({ message: 'Unauthorized access' })
+    // }
+    // jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+    //     if(error){
+    //         return res.status(401).send({message:'Unauthorized access'})
+    //     }
+        
+    // })
+    next();
+}
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -27,7 +54,21 @@ async function run() {
         const jobCollection = database.collection("jobCollection");
         const jobApplyCOllection = database.collection('jobApplyCOllection')
 
-        app.get('/jobs', async (req, res) => {
+        // auth api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' });
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: false, // Set to true in production (for HTTPS)
+                sameSite: 'Lax', // Lax for local development
+            });
+            res.json({ success: true });
+        });
+
+
+        // jobs api 
+        app.get('/jobs', logger, async (req, res) => {
             const email = req.query.email;
             let query = {};
             if (email) {
@@ -62,13 +103,15 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/jobApplications', async (req, res) => {
+        app.get('/jobApplications', verifyToken, async (req, res) => {
             const userEmail = req.query.email;
-            const query = { applicant_email: userEmail }
+            console.log('User Email:', userEmail);
+            console.log('Cookies:', req.cookies); // Should now log the token in cookies
+
+            const query = { applicant_email: userEmail };
             const result = await jobApplyCOllection.find(query).toArray();
             for (const a of result) {
-                // console.log(a.job._id);
-                const query1 = { _id: new ObjectId(a.job_id) }
+                const query1 = { _id: new ObjectId(a.job_id) };
                 const job = await jobCollection.findOne(query1);
                 if (job) {
                     a.title = job.title;
@@ -76,8 +119,8 @@ async function run() {
                     a.company_logo = job.company_logo;
                 }
             }
-            res.send(result)
-        })
+            res.send(result);
+        });
 
         app.post('/jobApplications', async (req, res) => {
             const application = req.body;
